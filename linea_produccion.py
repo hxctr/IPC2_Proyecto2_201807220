@@ -34,8 +34,10 @@ class LineaProduccion():
     
     def mostrar_lineas_de_produccion(self):
         tmp = self.inicio
+        print('**Listas de lineas de procuccion**')
         while tmp is not None:
-            print('numero: ', tmp.numero,'Cantidad de componentes: ', tmp.cantidad_componentes,'Tiempo de ensamblaje: ', tmp.tiempo_ensamblaje)
+            
+            print('\tnumero: ', tmp.numero,'Cantidad de componentes: ', tmp.cantidad_componentes,'Tiempo de ensamblaje: ', tmp.tiempo_ensamblaje)
             tmp = tmp.siguiente
     
     def __iter__(self):

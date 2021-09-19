@@ -39,6 +39,13 @@ class ListaSimple():
         dot = "digraph grafico{\nnode [style = \"filled\" shape = \"box\"]\n"
         
         dot += "rankdir = \"LR\"\n"
+        dot += "bgcolor = \"#0DA1FC\"\n"
+        
+        dot += "subgraph cluster_p{\n"
+        
+        dot += "bgcolor = \"#0DFCD7\"\n"
+        dot += "labelloc=\"t\";\n"
+        dot += "label=\""+str(nombre)+"\";\n"
         
         if not self.estaVacia():
             aux = self.fin
@@ -54,15 +61,17 @@ class ListaSimple():
                 
                 aux = aux.getSiguiente()
         dot += "}"
+        dot += "}"
 
         graficar_cola(dot, nombre)
 
 if __name__ == "__main__":
-    cola = ListaSimple()
-    cola.enqueue(5)
-    cola.enqueue(10)
-    cola.enqueue(20)
-    cola.graficar('hola')
+    # cola = ListaSimple()
+    # cola.enqueue(5)
+    # cola.enqueue(10)
+    # cola.enqueue(20)
+    # cola.graficar('hola')
+    pass
     
     
     

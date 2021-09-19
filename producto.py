@@ -21,15 +21,17 @@ class Productos():
             self.inicio = nuevo
         else:
             tmp = self.inicio
-            while self.inicio is not None:
+            while tmp.siguiente is not None:
                 tmp = tmp.siguiente
             tmp.siguiente = nuevo
             nuevo.anterior = tmp
     
     def motrar_productos(self):
         tmp = self.inicio
+        print('**Listas de productos**')
         while tmp is not None:
-            print('Nombre: ',tmp.nombre,' Cola de ensamblaje: ', tmp.cola_de_elaboracion)
+            
+            print('\tNombre: ,',tmp.nombre,', Cola de ensamblaje: ', tmp.cola_de_elaboracion)
             tmp = tmp.siguiente
     
     def __iter__(self):
