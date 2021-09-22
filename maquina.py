@@ -56,6 +56,21 @@ class Maquina():
             tmp = tmp.siguiente
         return None
     
+    def obtener_componente_maximo(self, nombre):
+        tmp = self.inicio
+        while tmp is not None:
+            for i in tmp.productos:
+                cola = ListaSimple()
+                if i.get_nombre() == nombre:
+                    resultado = re.sub("L[0-9]+p?C", '',str(i.get_elaboracion()))
+                    numero_componente = re.split(' ', resultado)
+                    max_com = max(numero_componente, key=int)
+            tmp = tmp.siguiente
+        return int(max_com)
+    
+    def generar_archivo_de_simulacion_individual(self):
+        pass
+    
     def graficar_cola_de_un_producto(self, nombre):
         tmp = self.inicio
         while tmp is not None:
@@ -70,12 +85,23 @@ class Maquina():
             tmp = tmp.siguiente
         return None
 
+from tkinter import *
+from functools import partial
+from tkinter.filedialog import askopenfilename
+
+
+
 
 matriz_maquina = Maquina()
+drop_down = list()
+filename = ''
 def cargar_datos_de_archivo_a_objeto_maquina():
+    Tk().withdraw()
+    global filename
     
-    #Aqui tiene que ser un tipo de get text
-    tree = ET.parse('maquina.xml')
+    filename = askopenfilename()
+    
+    tree = ET.parse(filename)
     root = tree.getroot()
     
     
@@ -97,14 +123,78 @@ def cargar_datos_de_archivo_a_objeto_maquina():
         for subelement in elemento.iter('Producto'):
             nombre = subelement.find('nombre').text
             elaboracion = subelement.find('elaboracion').text
+            drop_down.append(str(nombre.strip()))
             lista_de_productos.insertar_producto(nombre.strip(), elaboracion.strip())
         matriz_maquina.aniadir_listas_a_la_maquina(cantidad_lineas_produccion, lista_lineas_produccion, lista_de_productos)
-    
+    mostrar_menu()
+
 def graficar_cola_de_elaboracion(nombre):
     matriz_maquina.graficar_cola_de_un_producto(nombre)
     
 
 
+root = Tk()
+root.geometry('600x300')
+root.title("Digital Intelligence, S. A.")
+root.iconbitmap('mind.ico')
+#------
+menubar = Menu(root)
+root.config(menu=menubar)
+
+seleccion = ''
+def obtener_opcion_del_menu(variable):
+    global seleccion
+    print(variable.get())
+    seleccion = variable.get()
+    mostrar_componentes()
+
+def printSeleccion():
+    print(seleccion)
+    graficar_cola_de_elaboracion(seleccion)
+
+
+def mostrar_componentes():
+    
+    componente_maximo = matriz_maquina.obtener_componente_maximo(seleccion)
+    Lb1 = Listbox(root)
+    for i in range(componente_maximo):
+        Lb1.insert((i+1), "Componente "+str(i+1))
+
+    Lb1.place(x=60, y=60)
+
+def mostrar_menu():
+    global variable
+    variable = StringVar(root)
+    variable.set('Escoja un producto')
+
+    w = OptionMenu(root, variable, *drop_down)
+    B = Button(root, text ="Simular", command = partial(obtener_opcion_del_menu, variable), width = 10, activebackground='#C8E0DD')
+    w.place(x=20, y=10)
+    B.place(x= 20, y=40)
+
+filemenu = Menu(menubar, tearoff=0)
+filemenu.add_command(label="Archivo maquina", command=cargar_datos_de_archivo_a_objeto_maquina)
+filemenu.add_separator()
+filemenu.add_command(label="Salir", command=root.quit)
+
+reportmenu = Menu(menubar, tearoff=0)
+reportmenu.add_command(label="Reporte de colas", command=printSeleccion)
+reportmenu.add_command(label="Reporte HTML")
+
+infomenu = Menu(menubar, tearoff=0)
+infomenu.add_command(label="Informacion")
+infomenu.add_separator()
+infomenu.add_command(label="Acerca de...")
+
+menubar.add_cascade(label="Archivos", menu=filemenu)
+menubar.add_cascade(label="Reportes", menu=reportmenu)
+menubar.add_cascade(label="Ayuda", menu=infomenu)
+
+
+
+
+
+    
 if __name__ == '__main__':
     # maquina = Maquina()
     # lp = LineaProduccion()
@@ -115,8 +205,16 @@ if __name__ == '__main__':
     # maquina.mostrar_todas_los_datos_de_mi_maquina()
     # maquina.obtener_por_linea_de_ensamblaje(5)
     # maquina.obtener_producto_por_nombre('smartwatch')
-    cargar_datos_de_archivo_a_objeto_maquina()
+    # cargar_datos_de_archivo_a_objeto_maquina()
     # matriz_maquina.mostrar_todas_los_datos_de_mi_maquina()
+    
+    root.mainloop()
     matriz_maquina.obtener_producto_por_nombre('Barbie')
-    graficar_cola_de_elaboracion('Barbie')
+    # graficar_cola_de_elaboracion('Barbie')
+
+    print(matriz_maquina.obtener_componente_maximo('Barbie'))
+    
+    
+    
+    
     
