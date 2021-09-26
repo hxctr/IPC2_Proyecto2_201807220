@@ -3,6 +3,9 @@ from producto import *
 from cola import *
 import re
 import xml.etree.ElementTree as ET
+from xml.dom import minidom
+import random
+from simulacion import *
 
 class NodoMaquina():
     def __init__(self, cantidad_lineas_de_produccion, linea_de_produccion, productos):
@@ -68,8 +71,60 @@ class Maquina():
             tmp = tmp.siguiente
         return int(max_com)
     
-    def generar_archivo_de_simulacion_individual(self):
-        pass
+    def generar_archivo_de_simulacion_individual(self, nombre):
+        tmp = self.inicio
+        while tmp is not None:
+            for i in tmp.productos:
+                if i.get_nombre() == nombre:
+                    print('nombre: '+str(i.get_nombre())+' Linea de elaboracion: '+str(i.get_elaboracion()))
+                    
+                    #Desde esta tabulacion debe ir el minidom
+                    document = minidom.Document()
+                    root = document.createElement("SalidaSimulacion")
+                    
+                    nombre_simulacion = document.createElement("Nombre")
+                    nombre_simulacion.appendChild(document.createTextNode("Simulacion_"+str(i.get_nombre())))
+                    root.appendChild(nombre_simulacion)
+                    
+                    listado_productos = document.createElement("ListadoProductos")
+                    root.appendChild(listado_productos)
+                    
+                    
+                    producto = document.createElement("Producto")
+                    listado_productos.appendChild(producto)
+                    
+                    nombre_producto = document.createElement("Nombre")
+                    nombre_producto.appendChild(document.createTextNode(str(i.get_nombre())))
+                    producto.appendChild(nombre_producto)
+                    
+                    tiempo_total = document.createElement("TiempoTotal")
+                    tiempo_total.appendChild(document.createTextNode(str(random.randint(70, 120))))
+                    producto.appendChild(tiempo_total)
+                    
+                    elaboracion_optima = document.createElement("ElaboracionOptima")
+                    producto.appendChild(elaboracion_optima)
+                    
+                    tiempo = document.createElement("Tiempo")
+                    tiempo.setAttribute("NoSegundo", "1")
+                    elaboracion_optima.appendChild(tiempo)
+                    
+                    linea_de_ensamblaje = document.createElement("LineaEnsamblaje")
+                    linea_de_ensamblaje.setAttribute("NoLinea", "1")
+                    linea_de_ensamblaje.appendChild(document.createTextNode("   "))
+                    tiempo.appendChild(linea_de_ensamblaje)
+                    
+                    xml_str = root.toprettyxml(indent="\t")
+                    save_path_file="Simulacion_"+str(i.get_nombre())+".xml"
+                    
+                    with open(save_path_file, "w") as f:
+                        f.write(xml_str)
+                    
+                    
+                    
+                    
+                    
+            tmp = tmp.siguiente
+        return None
     
     def graficar_cola_de_un_producto(self, nombre):
         tmp = self.inicio
@@ -88,12 +143,14 @@ class Maquina():
 from tkinter import *
 from functools import partial
 from tkinter.filedialog import askopenfilename
-
-
+from tkinter.ttk import *
+from tkinter import messagebox
 
 
 matriz_maquina = Maquina()
 drop_down = list()
+simulacion = LKSimulacion()
+
 filename = ''
 def cargar_datos_de_archivo_a_objeto_maquina():
     Tk().withdraw()
@@ -128,9 +185,27 @@ def cargar_datos_de_archivo_a_objeto_maquina():
         matriz_maquina.aniadir_listas_a_la_maquina(cantidad_lineas_produccion, lista_lineas_produccion, lista_de_productos)
     mostrar_menu()
 
+
+
+
+
+def cargar_archivo_simulacion():
+    
+    tree = ET.parse('simulacion.xml')
+    root = tree.getroot()
+    
+    for elemento in root:
+        nombre_simulacion = elemento.text
+        lista_de_productos_simular = LKProducto()
+        
+        for subelement in elemento.iter('ListadoProductos'):
+            producto_nombre = subelement.find('Producto').text
+            lista_de_productos_simular.aniadir_productos_a_simular(producto_nombre.strip())
+        simulacion.aniadir_lista_a_simular(nombre_simulacion.strip(), lista_de_productos_simular)
+    print('pase aqui ya')
+
 def graficar_cola_de_elaboracion(nombre):
     matriz_maquina.graficar_cola_de_un_producto(nombre)
-    
 
 
 root = Tk()
@@ -139,6 +214,10 @@ root.title("Digital Intelligence, S. A.")
 root.iconbitmap('mind.ico')
 #------
 menubar = Menu(root)
+
+
+terminado = Label(root, text="")
+terminado.place(x=260, y=230)
 root.config(menu=menubar)
 
 seleccion = ''
@@ -147,20 +226,43 @@ def obtener_opcion_del_menu(variable):
     print(variable.get())
     seleccion = variable.get()
     mostrar_componentes()
+    matriz_maquina.generar_archivo_de_simulacion_individual(str(seleccion))
+    
 
 def printSeleccion():
     print(seleccion)
     graficar_cola_de_elaboracion(seleccion)
 
+process = 0
+
+
+def clicked():
+    pgbar = Progressbar(root,length=450,orient=HORIZONTAL,maximum = 100,value = 0,mode= 'determinate')
+    pgbar.place(x=100, y=200)
+    global process
+    if process == pgbar['maximum']:
+        terminado['text'] = ""
+        process = 0
+        pgbar['value'] = 0
+    process += 10
+    pgbar['value'] = process
+    terminado['text'] = str(process) + "%"
+    if pgbar['value'] >= pgbar['maximum']:
+        terminado['text'] = "100% completado"
+        return
+    root.after(100, clicked)
+
+
 
 def mostrar_componentes():
     
+    clicked()
     componente_maximo = matriz_maquina.obtener_componente_maximo(seleccion)
     Lb1 = Listbox(root)
     for i in range(componente_maximo):
         Lb1.insert((i+1), "Componente "+str(i+1))
 
-    Lb1.place(x=60, y=60)
+    Lb1.place(x=100, y=10)
 
 def mostrar_menu():
     global variable
@@ -168,9 +270,17 @@ def mostrar_menu():
     variable.set('Escoja un producto')
 
     w = OptionMenu(root, variable, *drop_down)
-    B = Button(root, text ="Simular", command = partial(obtener_opcion_del_menu, variable), width = 10, activebackground='#C8E0DD')
+    B = Button(root, text ="Simular", command = partial(obtener_opcion_del_menu, variable), width = 10)
+    
     w.place(x=20, y=10)
     B.place(x= 20, y=40)
+
+def print_info():
+    messagebox.showinfo(message="Hector Ponsoy\nIPC2 2S 2021", title="Informacion")
+
+def print_acercade():
+    messagebox.showinfo(message="Versión: 1.60.0 (user setup)\nConfirmación: e7d7e9a9348\nFecha: 2021-09-01T10:41:52.311Z\nChrome: 91.0.4472.164\nSistema Operativo: Windows_NT x64 10.0.19043", title="Acerca de")
+
 
 filemenu = Menu(menubar, tearoff=0)
 filemenu.add_command(label="Archivo maquina", command=cargar_datos_de_archivo_a_objeto_maquina)
@@ -182,9 +292,9 @@ reportmenu.add_command(label="Reporte de colas", command=printSeleccion)
 reportmenu.add_command(label="Reporte HTML")
 
 infomenu = Menu(menubar, tearoff=0)
-infomenu.add_command(label="Informacion")
+infomenu.add_command(label="Informacion", command=print_info)
 infomenu.add_separator()
-infomenu.add_command(label="Acerca de...")
+infomenu.add_command(label="Acerca de...", command=print_acercade)
 
 menubar.add_cascade(label="Archivos", menu=filemenu)
 menubar.add_cascade(label="Reportes", menu=reportmenu)
@@ -209,10 +319,13 @@ if __name__ == '__main__':
     # matriz_maquina.mostrar_todas_los_datos_de_mi_maquina()
     
     root.mainloop()
-    matriz_maquina.obtener_producto_por_nombre('Barbie')
+    # matriz_maquina.obtener_producto_por_nombre('Barbie')
     # graficar_cola_de_elaboracion('Barbie')
 
-    print(matriz_maquina.obtener_componente_maximo('Barbie'))
+    # print(matriz_maquina.obtener_componente_maximo('Barbie'))
+    # cargar_archivo_simulacion()
+    # simulacion.generar_archivo_de_simulacion_masiva()
+    
     
     
     

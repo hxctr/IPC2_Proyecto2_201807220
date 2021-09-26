@@ -1,0 +1,16 @@
+<Simulacion>
+    <Nombre>
+        simulacion total
+    </Nombre>
+    <ListadoProductos>
+        <Producto>
+            Kindle
+        </Producto>
+        <Producto>
+            Barbie
+        </Producto>
+        <Producto>
+            Galaxy Note
+        </Producto>
+    </ListadoProductos>
+</Simulacion>

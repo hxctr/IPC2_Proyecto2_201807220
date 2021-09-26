@@ -3,3 +3,5 @@ test.py
 .idea
 ventana.py
 .gitignore
+minidom.py
+simulacion.py
