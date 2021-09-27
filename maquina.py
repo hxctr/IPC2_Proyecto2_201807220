@@ -145,6 +145,7 @@ from functools import partial
 from tkinter.filedialog import askopenfilename
 from tkinter.ttk import *
 from tkinter import messagebox
+from  tkinter import ttk
 
 
 matriz_maquina = Maquina()
@@ -160,6 +161,7 @@ def cargar_datos_de_archivo_a_objeto_maquina():
     
     tree = ET.parse(filename)
     root = tree.getroot()
+    
     
     
     for elemento in root:
@@ -188,10 +190,15 @@ def cargar_datos_de_archivo_a_objeto_maquina():
 
 
 
-
+fsimulacion = ''
 def cargar_archivo_simulacion():
     
-    tree = ET.parse('simulacion.xml')
+    Tk().withdraw()
+    global fsimulacion
+    
+    fsimulacion = askopenfilename()
+    
+    tree = ET.parse(fsimulacion)
     root = tree.getroot()
     
     for elemento in root:
@@ -202,14 +209,57 @@ def cargar_archivo_simulacion():
             producto_nombre = subelement.find('Producto').text
             lista_de_productos_simular.aniadir_productos_a_simular(producto_nombre.strip())
         simulacion.aniadir_lista_a_simular(nombre_simulacion.strip(), lista_de_productos_simular)
-    print('pase aqui ya')
+    mostra_btn()
+
 
 def graficar_cola_de_elaboracion(nombre):
+    clicked()
     matriz_maquina.graficar_cola_de_un_producto(nombre)
 
 
+def reporte_en_html():
+    clicked()
+    componente_maximo = matriz_maquina.obtener_componente_maximo(seleccion)
+    
+    
+    texto = """
+    <html>
+        <head>
+            <title>Reporte de producto</title>
+            <meta charset="utf-8">
+            <meta name="Author" content="https://github.com/pablorgarcia" />
+            <meta name="description" content="Table Responsive" />
+            <meta name="keywords" content="table, responsive" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <link href="table-responsive.css" media="screen" type="text/css" rel="stylesheet" />
+        </head>
+        <body>
+        <h1><span class="blue"></span>Reporte<span class="blue"></span> <span class="yellow"> """+str(seleccion)+"""</pan></h1>
+        <table class="container">
+            <thead>
+                <tr>
+                    <th>Tiempo</th>
+                    <th>Movimiento</th>
+                </tr>
+            </thead>
+            <tbody>"""
+    numeros = 1
+    for i in range(componente_maximo):
+        texto = texto + """<tr><td>"""+str(numeros)+"""</td><td> Mover brazo a Componente """+str(i+1)+"""</td></tr>"""
+        numeros = numeros + 1
+    texto2="""
+                    </tbody>
+                    </table>
+
+                    </body>
+                    </html>"""
+    texto = texto + texto2
+    file = open(str(seleccion).strip()+".html" ,mode='w', encoding='utf-8')
+    file.write(texto)
+    file.close()
+
 root = Tk()
-root.geometry('600x300')
+root.geometry('600x405')
 root.title("Digital Intelligence, S. A.")
 root.iconbitmap('mind.ico')
 #------
@@ -217,7 +267,7 @@ menubar = Menu(root)
 
 
 terminado = Label(root, text="")
-terminado.place(x=260, y=230)
+terminado.place(x=260, y=330)
 root.config(menu=menubar)
 
 seleccion = ''
@@ -226,6 +276,7 @@ def obtener_opcion_del_menu(variable):
     print(variable.get())
     seleccion = variable.get()
     mostrar_componentes()
+    mostra_tabla()
     matriz_maquina.generar_archivo_de_simulacion_individual(str(seleccion))
     
 
@@ -238,7 +289,7 @@ process = 0
 
 def clicked():
     pgbar = Progressbar(root,length=450,orient=HORIZONTAL,maximum = 100,value = 0,mode= 'determinate')
-    pgbar.place(x=100, y=200)
+    pgbar.place(x=100, y=305)
     global process
     if process == pgbar['maximum']:
         terminado['text'] = ""
@@ -258,11 +309,13 @@ def mostrar_componentes():
     
     clicked()
     componente_maximo = matriz_maquina.obtener_componente_maximo(seleccion)
+    pcom = Label(root, text="Lista de componentes")
+    pcom.place(x=150, y=60)
     Lb1 = Listbox(root)
     for i in range(componente_maximo):
         Lb1.insert((i+1), "Componente "+str(i+1))
 
-    Lb1.place(x=100, y=10)
+    Lb1.place(x=150, y=80)
 
 def mostrar_menu():
     global variable
@@ -275,6 +328,13 @@ def mostrar_menu():
     w.place(x=20, y=10)
     B.place(x= 20, y=40)
 
+
+
+def mostra_btn():
+    Btn = Button(root, text ="Simulacion\nmasiva", width = 12)
+    Btn.place(x=22, y=63)
+
+
 def print_info():
     messagebox.showinfo(message="Hector Ponsoy\nIPC2 2S 2021", title="Informacion")
 
@@ -284,12 +344,13 @@ def print_acercade():
 
 filemenu = Menu(menubar, tearoff=0)
 filemenu.add_command(label="Archivo maquina", command=cargar_datos_de_archivo_a_objeto_maquina)
+filemenu.add_command(label="Archivo de simulacion", command=cargar_archivo_simulacion)
 filemenu.add_separator()
 filemenu.add_command(label="Salir", command=root.quit)
 
 reportmenu = Menu(menubar, tearoff=0)
 reportmenu.add_command(label="Reporte de colas", command=printSeleccion)
-reportmenu.add_command(label="Reporte HTML")
+reportmenu.add_command(label="Reporte HTML", command=reporte_en_html)
 
 infomenu = Menu(menubar, tearoff=0)
 infomenu.add_command(label="Informacion", command=print_info)
@@ -299,6 +360,43 @@ infomenu.add_command(label="Acerca de...", command=print_acercade)
 menubar.add_cascade(label="Archivos", menu=filemenu)
 menubar.add_cascade(label="Reportes", menu=reportmenu)
 menubar.add_cascade(label="Ayuda", menu=infomenu)
+
+#---------------------
+
+
+def mostra_tabla():
+    componente_maximo = matriz_maquina.obtener_componente_maximo(seleccion)
+    ptabla = Label(root, text="Tabla de procesos")
+    ptabla.place(x=375, y=20)
+    table_frame = Frame(root)
+    table_frame.place(x=350, y=40)
+
+    table_scrollbarV = Scrollbar(table_frame, orient='vertical')
+    table_scrollbarV.pack(side=RIGHT, fill=Y)
+
+    table_scrollbarH = Scrollbar(table_frame,orient='horizontal')
+    table_scrollbarH.pack(side= BOTTOM,fill=X)
+
+    my_table = ttk.Treeview(table_frame,yscrollcommand = table_scrollbarV.set,xscrollcommand = table_scrollbarH.set)
+
+    my_table.pack()
+
+    table_scrollbarV.config(command=my_table.yview)
+    table_scrollbarH.config(command=my_table.xview)
+
+    my_table['columns'] = ('_tiempo', '_movimiento')
+
+    my_table.column("#0", width=0,  stretch=NO)
+    my_table.column("_tiempo",anchor=CENTER, minwidth = 100, width=80)
+    my_table.column("_movimiento",anchor=CENTER,minwidth = 100, width=80)
+
+    my_table.heading("_tiempo",text="Tiempo",anchor=CENTER)
+    my_table.heading("_movimiento",text="Movimiento",anchor=CENTER)
+
+
+    for i in range(componente_maximo):
+        my_table.insert(parent='',index='end',iid=i,text='',values=(str(i + 1),'mover brazo a C'+str(i + 1)))
+    my_table.pack()
 
 
 
